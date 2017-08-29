@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<!--
+		Licensed to the Apache Software Foundation (ASF) under one or more
+		contributor license agreements. See the NOTICE file distributed with
+		this work for additional information regarding copyright ownership.
+		The ASF licenses this file to you under the Apache License, Version
+		2.0 (the "License"); you may not use this file except in compliance
+		with the License. You may obtain a copy of the License at
+		http://www.apache.org/licenses/LICENSE-2.0 Unless required by
+		applicable law or agreed to in writing, software distributed under the
+		License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+		CONDITIONS OF ANY KIND, either express or implied. See the License for
+		the specific language governing permissions and limitations under the
+		License.
+	-->
+<server xmlns="http://mina.apache.org/ftpserver/spring/v1"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+	   http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd 
+	   http://mina.apache.org/ftpserver/spring/v1 http://mina.apache.org/ftpserver/ftpserver-1.0.xsd	
+	   "
+	id="myServer" anon-enabled="false"  max-anon-logins="0"  max-login-failures="3"  login-failure-delay="10000" max-logins="4000" >
+	<!--
+		Use this section to define custom listeners, or to redefine the
+		default listener, aptly named "default"
+	-->
+	<listeners>
+		<nio-listener name="default" implicit-ssl="false" port="21">
+<!--			<ssl>
+				<keystore file="./res/ftpserver.jks" password="password"/>
+			</ssl>
+			-->
+			<data-connection idle-timeout="120">
+<!--			<active local-port="4000"/>
+			<passive ports="4001"/>-->
+			
+			</data-connection>
+		</nio-listener>
+	</listeners>
+	<!--
+		Use this section to define your Ftplets, they are configured like
+		regular Spring beans
+	-->
+	<ftplets>
+		<ftplet name="MyFtplet">
+			<beans:bean class="com.shiyi.km.ftpserver.control.MyFtplet">
+<!-- 				<beans:property name="foo" value="123" /> -->
+			</beans:bean>
+		</ftplet>
+	</ftplets>
+	
+	<!-- The user manager, choose one -->
+	<!--<file-user-manager file="users.properties"
+		encrypt-passwords="true" />
+         -->
+         	<!-- encrypt-passwords这个参数如果设置成md5，就是把用户传过来的pwd进行md5加密一次后再与数据库里存的密码做验证
+         		设置成clear就是不做加密，直接拿去验证。 -->
+       <db-user-manager encrypt-passwords="clear">
+		<data-source>
+		<beans:bean class="org.apache.commons.dbcp.BasicDataSource"> 
+			<beans:property name="driverClassName" value="com.mysql.jdbc.Driver" /> 
+			<beans:property name="url" value="jdbc:mysql://192.168.97.120:3306/ftp" />
+			<beans:property name="username" value="root" /> 
+			<beans:property name="password" value="666666" />
+
+			<beans:property name="validationQuery" value="SELECT 1" /> 
+			<beans:property name="initialSize" value="20" />
+			<beans:property name="maxActive" value="2000" />
+			<beans:property name="maxWait" value="-1" />
+			<beans:property name="testWhileIdle" value="true" />
+			<beans:property name="poolPreparedStatements" value="true" />
+			<beans:property name="removeAbandoned" value="true" />
+			
+		</beans:bean> 		
+		</data-source>
+		<insert-user>INSERT INTO FTP_USER (userid, userpassword,
+			homedirectory, enableflag, writepermission, idletime, uploadrate,
+			downloadrate) VALUES ('{userid}', '{userpassword}',
+			'{homedirectory}',
+			{enableflag}, {writepermission}, {idletime},
+			{uploadrate},
+			{downloadrate})
+		</insert-user>
+			<update-user>UPDATE FTP_USER SET
+				userpassword='{userpassword}',homedirectory='{homedirectory}',enableflag={enableflag},writepermission={writepermission},idletime={idletime},uploadrate={uploadrate},downloadrate={downloadrate}
+				WHERE userid='{userid}'
+		</update-user>
+			<delete-user>DELETE FROM FTP_USER WHERE userid = '{userid}'
+		</delete-user>
+			<select-user>SELECT userid, userpassword, homedirectory,
+				enableflag, writepermission, idletime, uploadrate, downloadrate,
+				maxloginnumber, maxloginperip FROM
+				FTP_USER WHERE userid = '{userid}'
+		</select-user>
+			<select-all-users>SELECT userid FROM FTP_USER ORDER BY userid
+		</select-all-users>
+			<is-admin>SELECT userid FROM FTP_USER WHERE userid='{userid}'
+				AND
+				userid='admin'
+		</is-admin>
+			<authenticate>SELECT userpassword from FTP_USER WHERE
+				userid='{userid}'</authenticate>
+	</db-user-manager>
+	<!-- The file system -->
+	<native-filesystem case-insensitive="false"
+		create-home="true" />
+	<!--
+		Use this section to define custom commands. Custom commands can also
+		override already existing commands
+	-->
+	<!--<commands use-default="false">
+		<command name="MYHELP">
+			<beans:bean class="org.apache.ftpserver.examples.MYHELP" />
+		</command>
+	</commands>-->
+	<!-- Define the available languages -->
+	<messages languages="zh-tw" />
+</server>
